@@ -12,8 +12,6 @@ float deltaRoll;
 float deltaYaw;
 float gyroDpsPerDigit;
 
-float roll;
-
 float gyroZeroRoll;
 float gyroZeroPitch;
 float gyroZeroYaw;
@@ -35,7 +33,9 @@ byte gyroBufferPos = 0;
 void initGyro(int scale)
 {
   // Initializes L3G4200D gyroscope
+#ifdef DEBUG_INIT
   Serial.print("Initializing gyroscope");
+#endif
 
   // Enable x, y, z and turn off power down
 #ifdef GYRO_HPF_IMU
@@ -43,14 +43,18 @@ void initGyro(int scale)
   // Bandwidth: 11, Cut-Off: 70
   writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG1, 0b01111111);
 #else
-  writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG1, 0b00001111);
+  writeRegister(GYRO_CTRL_REG1, GYRO_CTRL_REG1, 0b00001111);
 #endif
-  Serial.print(".");
+#ifdef DEBUG_INIT
+  Serial.println("GYRO_CTRL_REG5");
+#endif
 
   // High pass filter
 #ifdef GYRO_HPF_IMU
   writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG2, 0b00000000);
-  Serial.print(".");
+#ifdef DEBUG_INIT
+  Serial.println("GYRO_CTRL_REG2");
+#endif
 #endif
 
   // GYRO_CTRL_REG4: range
@@ -66,7 +70,9 @@ void initGyro(int scale)
     writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG4, 0b00100000);
     gyroDpsPerDigit = 0.07;
   }
-  Serial.print(".");
+#ifdef DEBUG_INIT
+  Serial.println("GYRO_CTRL_REG4");
+#endif
 
   // CTRL_REG5: enable High Pass Filter
 #ifdef GYRO_HPF_IMU
@@ -74,11 +80,17 @@ void initGyro(int scale)
 #else
   writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG5, 0b00000000);
 #endif
-  Serial.println(".");
+#ifdef DEBUG_INIT
+  Serial.println("GYRO_CTRL_REG5");
+  Serial.println("Finished initializing gyroscope");
+#endif
 }
 
 void calibrateGyro()
 {
+#ifdef DEBUG_CALIBRATE
+  Serial.println("Calibrating gyro");
+#endif
   byte* data;
   long sumRoll;
   long sumPitch;
@@ -93,18 +105,24 @@ void calibrateGyro()
   gyroZeroRoll = sumRoll / 1000;
   gyroZeroPitch = sumRoll / 1000;
   gyroZeroYaw = sumRoll / 1000;
+#ifdef DEBUG_CALIBRATE
+  Serial.print("Calibration finished, averages (°/s): ");
+  Serial.print(gyroZeroRoll * gyroDpsPerDigit * REFRESH_INTERVAL, 2);
+  Serial.print(";\t");
+  Serial.print(gyroZeroPitch * gyroDpsPerDigit * REFRESH_INTERVAL, 2);
+  Serial.print(";\t");
+  Serial.print(gyroZeroYaw * gyroDpsPerDigit * REFRESH_INTERVAL, 2);
+  Serial.println();
+#endif
 }
 
-void readGyro()
+void updateGyro()
 {
   byte* data = readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6);
 
   deltaRoll = ((data[1] << 8) | data[0]) - gyroZeroRoll;
   deltaPitch = ((data[3] << 8) | data[2]) - gyroZeroPitch;
   deltaYaw = ((data[5] << 8) | data[4]) - gyroZeroYaw;
-  //  deltaRoll = ((data[1] << 8) | data[0]);
-  //  deltaPitch = ((data[3] << 8) | data[2]);
-  //  deltaYaw = ((data[5] << 8) | data[4]);
 
 #ifdef GYRO_HPF_ARD
   gyroBufferSum[0] -= gyroBuffer[gyroBufferPos][0];
@@ -127,33 +145,12 @@ void readGyro()
   deltaPitch *= gyroDpsPerDigit * REFRESH_INTERVAL;
   deltaYaw *= gyroDpsPerDigit * REFRESH_INTERVAL;
 
-  /*
-    Serial.print(deltaRoll);
-    Serial.print(";");
-    Serial.print(gyroBufferSum[0] / GYRO_BUFFER_LENGTH / 1000);
-    Serial.print(";");
-    Serial.println(roll);//*/
-
-  //  Serial.print(((data[1] << 8) | data[0]) * gyroDpsPerDigit);
-  //  Serial.print(";");
-  //  Serial.print(((data[3] << 8) | data[2]) * gyroDpsPerDigit);
-  //  Serial.print(";");
-  //  Serial.println(((data[5] << 8) | data[4]) * gyroDpsPerDigit);
-  Serial.print(deltaRoll);
-  Serial.print(";");
-  Serial.print(deltaPitch);
-  Serial.print(";");
-  Serial.println(deltaYaw);
-
-  /*
-    // High-pass filter
-    if (!gyroHPFEnable) return;
-
-    gyroZero[0] = GYRO_ALPHA * gyroZero[0] + (1 - GYRO_ALPHA) * gyro[0];
-    gyroZero[1] = GYRO_ALPHA * gyroZero[1] + (1 - GYRO_ALPHA) * gyro[1];
-    gyroZero[2] = GYRO_ALPHA * gyroZero[2] + (1 - GYRO_ALPHA) * gyro[2];
-
-    gyro[0] -= gyroZero[0];
-    gyro[1] -= gyroZero[1];
-    gyro[2] -= gyroZero[2];//*/
+#ifdef DEBUG_UPDATE
+  Serial.print(deltaRoll, 2);
+  Serial.print(";\t");
+  Serial.print(deltaPitch, 2);
+  Serial.print(";\t");
+  Serial.print(deltaYaw, 2);
+  Serial.print(";\t");
+#endif
 }
