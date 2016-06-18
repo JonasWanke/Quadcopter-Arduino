@@ -105,6 +105,9 @@ void calibrateGyro()
   gyroZeroRoll = sumRoll / 1000;
   gyroZeroPitch = sumRoll / 1000;
   gyroZeroYaw = sumRoll / 1000;
+  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
+  delay(100);
+  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
 #ifdef DEBUG_CALIBRATE
   Serial.print("Calibration finished, averages (°/s): ");
   Serial.print(gyroZeroRoll * gyroDpsPerDigit * REFRESH_INTERVAL, 2);

@@ -17,7 +17,11 @@ const float REFRESH_RATE = 200;
 // Unit: s
 const float REFRESH_INTERVAL = 1 / REFRESH_RATE;
 
+const byte PIN_BUTTON_CALIBRATION = 2;
+const byte PIN_LED_CALIBRATION = 3;
+const byte PIN_LED_CALIBRATION_FINISHED = 4;
 
+// Initialization and calibration
 void setup() {
   Serial.begin(9600);
   Wire.begin();
@@ -37,7 +41,13 @@ void setup() {
   Serial.println();
   Serial.println("Calibration starts");
 #endif
+  pinMode(PIN_BUTTON_CALIBRATION, INPUT);
+  pinMode(PIN_LED_CALIBRATION, OUTPUT);
+  pinMode(PIN_LED_CALIBRATION_FINISHED, OUTPUT);
+  digitalWrite(PIN_LED_CALIBRATION, HIGH);
   calibrateGyro();
+  digitalWrite(PIN_LED_CALIBRATION, LOW);
+  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
 #ifdef DEBUG_CALIBRATE
   Serial.println("Calibration finished");
 #endif
@@ -48,6 +58,7 @@ void setup() {
 #endif
 }
 
+// Updating
 void loop() {
   if (lastTime == 0)
     lastTime = micros();
