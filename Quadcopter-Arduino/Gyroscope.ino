@@ -4,11 +4,11 @@ const byte GYRO_CTRL_REG2 = 0x21;
 const byte GYRO_CTRL_REG3 = 0x22;
 const byte GYRO_CTRL_REG4 = 0x23;
 const byte GYRO_CTRL_REG5 = 0x24;
-// Unit: °/s
+// Unit: rad/s
 float deltaPitch;
-// Unit: °/s
+// Unit: rad/s
 float deltaRoll;
-// Unit: °/s
+// Unit: rad/s
 float deltaYaw;
 float gyroDpsPerDigit;
 
@@ -30,9 +30,9 @@ int gyroBufferSum[3];
 byte gyroBufferPos = 0;
 #endif
 
+// Initializes L3G4200D gyroscope
 void initGyro(int scale)
 {
-  // Initializes L3G4200D gyroscope
 #ifdef DEBUG_INIT
   Serial.print("Initializing gyroscope");
 #endif
@@ -102,9 +102,9 @@ void calibrateGyro()
     sumPitch += ((data[3] << 8) | data[2]);
     sumYaw += ((data[5] << 8) | data[4]);
   }
-  gyroZeroRoll = sumRoll / 1000;
-  gyroZeroPitch = sumRoll / 1000;
-  gyroZeroYaw = sumRoll / 1000;
+  gyroZeroRoll = sumRoll / GYRO_CALIBRATION_READINGS;
+  gyroZeroPitch = sumPitch / GYRO_CALIBRATION_READINGS;
+  gyroZeroYaw = sumYaw / GYRO_CALIBRATION_READINGS;
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
   delay(100);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
@@ -144,11 +144,12 @@ void updateGyro()
   deltaYaw = gyroBufferSum[2] / GYRO_BUFFER_LENGTH;
 #endif
 
-  deltaRoll *= gyroDpsPerDigit * REFRESH_INTERVAL;
-  deltaPitch *= gyroDpsPerDigit * REFRESH_INTERVAL;
-  deltaYaw *= gyroDpsPerDigit * REFRESH_INTERVAL;
+  deltaRoll *= gyroDpsPerDigit * DEG_TO_RAD * REFRESH_INTERVAL;
+  deltaPitch *= gyroDpsPerDigit * DEG_TO_RAD * REFRESH_INTERVAL;
+  deltaYaw *= gyroDpsPerDigit * DEG_TO_RAD * REFRESH_INTERVAL;
 
 #ifdef DEBUG_UPDATE
+  Serial.print("Gyro: ");
   Serial.print(deltaRoll, 2);
   Serial.print(";\t");
   Serial.print(deltaPitch, 2);
