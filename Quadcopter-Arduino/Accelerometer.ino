@@ -19,6 +19,8 @@ float accMaxZ;
 
 const int ACC_CALIBRATION_READINGS = 500;
 
+const int ACC_EEPROM_OFFSET = 0;
+
 #define ACC_LPF
 #ifdef ACC_LPF
 const byte ACC_BUFFER_LENGTH = 5;
@@ -75,6 +77,14 @@ void initAcc(int scale)
   }
 #ifdef DEBUG_INIT
   Serial.println("ACC_DATA_FORMAT");
+  #endif
+  EEPROM.get(ACC_EEPROM_OFFSET, accMinX);
+  EEPROM.get(ACC_EEPROM_OFFSET + 1 * sizeof(float), accMaxX);
+  EEPROM.get(ACC_EEPROM_OFFSET + 2 * sizeof(float), accMinY);
+  EEPROM.get(ACC_EEPROM_OFFSET + 3 * sizeof(float), accMaxY);
+  EEPROM.get(ACC_EEPROM_OFFSET + 4 * sizeof(float), accMinZ);
+  EEPROM.get(ACC_EEPROM_OFFSET + 5 * sizeof(float), accMaxZ);
+  #ifdef DEBUG_INIT
   Serial.println("Finished initializing gyroscope");
 #endif
 }
@@ -101,14 +111,12 @@ void calibrateAcc()
   for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
   {
     data = readRegister(ACC_SERIAL_ADDRESS, 0x36, 2);
-    sumZ += (data[5] << 8) | data[4];
+    sumZ += (data[1] << 8) | data[0];
     Serial.println(i);
     delay(10);
   }
   accMaxZ = sumZ / ACC_CALIBRATION_READINGS * accGPerLSB;
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-
 
   // Hold upside down
 #ifdef DEBUG_CALIBRATE
@@ -126,9 +134,6 @@ void calibrateAcc()
   }
   accMinZ = sumZ / ACC_CALIBRATION_READINGS * accGPerLSB;
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-
-
 
   // Hold right side down
 #ifdef DEBUG_CALIBRATE
@@ -199,6 +204,12 @@ void calibrateAcc()
   accMaxX = sumX / ACC_CALIBRATION_READINGS * accGPerLSB;
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
 
+  EEPROM.put(ACC_EEPROM_OFFSET, accMinX);
+  EEPROM.put(ACC_EEPROM_OFFSET + 1 * sizeof(float), accMaxX);
+  EEPROM.put(ACC_EEPROM_OFFSET + 2 * sizeof(float), accMinY);
+  EEPROM.put(ACC_EEPROM_OFFSET + 3 * sizeof(float), accMaxY);
+  EEPROM.put(ACC_EEPROM_OFFSET + 4 * sizeof(float), accMinZ);
+  EEPROM.put(ACC_EEPROM_OFFSET + 5 * sizeof(float), accMaxZ);
   delay(100);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
 #ifdef DEBUG_CALIBRATE

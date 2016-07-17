@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <Wire.h>
 
 // Debug options
@@ -26,7 +27,7 @@ void setup() {
   Serial.begin(115200);
   Wire.begin();
 
-// Initialization of all sensors
+  // Initialization of all sensors
 #ifdef DEBUG_INIT
   Serial.println();
   Serial.println("Initialization starts");
@@ -34,14 +35,14 @@ void setup() {
 
   initGyro(250);
   initAcc(4);
-  
+
 #ifdef DEBUG_INIT
   Serial.println("Initialization finished");
 #endif
 
   delay(1500);
 
-// Calibration of all sensors
+  // Calibration of all sensors
 #ifdef DEBUG_CALIBRATE
   Serial.println();
   Serial.println("Calibration starts");
@@ -50,10 +51,9 @@ void setup() {
   pinMode(PIN_LED_CALIBRATION, OUTPUT);
   pinMode(PIN_LED_CALIBRATION_FINISHED, OUTPUT);
   digitalWrite(PIN_LED_CALIBRATION, HIGH);
-  
+
   calibrateGyro();
-  calibrateAcc();
-  
+
   digitalWrite(PIN_LED_CALIBRATION, LOW);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
 #ifdef DEBUG_CALIBRATE
@@ -73,6 +73,9 @@ void loop() {
   currentTime = micros();
   timeDelta = (currentTime - lastTime) / 1000;
   lastTime = currentTime;
+
+  if (digitalRead(PIN_BUTTON_CALIBRATION))
+    calibrateAcc();
 
   updateGyro();
 
