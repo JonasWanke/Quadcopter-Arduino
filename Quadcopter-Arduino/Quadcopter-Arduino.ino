@@ -23,20 +23,25 @@ const byte PIN_LED_CALIBRATION_FINISHED = 4;
 
 // Initialization and calibration
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
 
+// Initialization of all sensors
 #ifdef DEBUG_INIT
   Serial.println();
   Serial.println("Initialization starts");
 #endif
+
   initGyro(250);
+  initAcc(4);
+  
 #ifdef DEBUG_INIT
   Serial.println("Initialization finished");
 #endif
 
   delay(1500);
 
+// Calibration of all sensors
 #ifdef DEBUG_CALIBRATE
   Serial.println();
   Serial.println("Calibration starts");
@@ -45,7 +50,10 @@ void setup() {
   pinMode(PIN_LED_CALIBRATION, OUTPUT);
   pinMode(PIN_LED_CALIBRATION_FINISHED, OUTPUT);
   digitalWrite(PIN_LED_CALIBRATION, HIGH);
+  
   calibrateGyro();
+  calibrateAcc();
+  
   digitalWrite(PIN_LED_CALIBRATION, LOW);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
 #ifdef DEBUG_CALIBRATE
