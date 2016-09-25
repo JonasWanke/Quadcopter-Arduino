@@ -4,13 +4,16 @@ const byte GYRO_CTRL_REG2 = 0x21;
 const byte GYRO_CTRL_REG3 = 0x22;
 const byte GYRO_CTRL_REG4 = 0x23;
 const byte GYRO_CTRL_REG5 = 0x24;
+
 // Unit: rad/s
 float deltaPitch;
 // Unit: rad/s
 float deltaRoll;
 // Unit: rad/s
 float deltaYaw;
+
 float gyroDpsPerDigit;
+byte gyroData[6];
 
 float gyroZeroRoll;
 float gyroZeroPitch;
@@ -72,6 +75,8 @@ void initGyro(int scale)
   }
 #ifdef DEBUG_INIT
   Serial.println("GYRO_CTRL_REG4");
+  Serial.println(gyroDpsPerDigit);
+  Serial.println(0.0175);
 #endif
 
   // CTRL_REG5: enable High Pass Filter
@@ -91,41 +96,41 @@ void calibrateGyro()
 #ifdef DEBUG_CALIBRATE
   Serial.println("Calibrating gyro");
 #endif
-  byte* data;
-  long sumRoll;
-  long sumPitch;
-  long sumYaw;
+  long sumRoll = 0;
+  long sumPitch = 0;
+  long sumYaw = 0;
   for (int i = 0; i < GYRO_CALIBRATION_READINGS; i++)
   {
-    data = readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6);
-    sumRoll += ((data[1] << 8) | data[0]);
-    sumPitch += ((data[3] << 8) | data[2]);
-    sumYaw += ((data[5] << 8) | data[4]);
+    readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6, gyroData);
+    sumRoll += ((gyroData[1] << 8) | gyroData[0]);
+    sumPitch += ((gyroData[3] << 8) | gyroData[2]);
+    sumYaw += ((gyroData[5] << 8) | gyroData[4]);
+    delay(10);
   }
-  gyroZeroRoll = sumRoll / GYRO_CALIBRATION_READINGS;
-  gyroZeroPitch = sumPitch / GYRO_CALIBRATION_READINGS;
-  gyroZeroYaw = sumYaw / GYRO_CALIBRATION_READINGS;
+  gyroZeroRoll = sumRoll / GYRO_CALIBRATION_READINGS * gyroDpsPerDigit;
+  gyroZeroPitch = sumPitch / GYRO_CALIBRATION_READINGS * gyroDpsPerDigit;
+  gyroZeroYaw = sumYaw / GYRO_CALIBRATION_READINGS * gyroDpsPerDigit;
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
   delay(100);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
 #ifdef DEBUG_CALIBRATE
   Serial.print("Calibration finished, averages (°/s): ");
-  Serial.print(gyroZeroRoll * gyroDpsPerDigit * REFRESH_INTERVAL, 2);
+  Serial.print(gyroZeroRoll, 2);
   Serial.print(";\t");
-  Serial.print(gyroZeroPitch * gyroDpsPerDigit * REFRESH_INTERVAL, 2);
+  Serial.print(gyroZeroPitch, 2);
   Serial.print(";\t");
-  Serial.print(gyroZeroYaw * gyroDpsPerDigit * REFRESH_INTERVAL, 2);
+  Serial.print(gyroZeroYaw, 2);
   Serial.println();
 #endif
 }
 
 void updateGyro()
 {
-  byte* data = readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6);
+  readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6, gyroData);
 
-  deltaRoll = ((data[1] << 8) | data[0]) - gyroZeroRoll;
-  deltaPitch = ((data[3] << 8) | data[2]) - gyroZeroPitch;
-  deltaYaw = ((data[5] << 8) | data[4]) - gyroZeroYaw;
+  deltaRoll = (gyroData[1] << 8) | gyroData[0];
+  deltaPitch = (gyroData[3] << 8) | gyroData[2];
+  deltaYaw = (gyroData[5] << 8) | gyroData[4];
 
 #ifdef GYRO_HPF_ARD
   gyroBufferSum[0] -= gyroBuffer[gyroBufferPos][0];
@@ -144,9 +149,9 @@ void updateGyro()
   deltaYaw = gyroBufferSum[2] / GYRO_BUFFER_LENGTH;
 #endif
 
-  deltaRoll *= gyroDpsPerDigit * DEG_TO_RAD * REFRESH_INTERVAL;
-  deltaPitch *= gyroDpsPerDigit * DEG_TO_RAD * REFRESH_INTERVAL;
-  deltaYaw *= gyroDpsPerDigit * DEG_TO_RAD * REFRESH_INTERVAL;
+  deltaRoll = (deltaRoll * gyroDpsPerDigit - gyroZeroRoll) * REFRESH_INTERVAL;
+  deltaPitch = (deltaPitch * gyroDpsPerDigit - gyroZeroPitch) * REFRESH_INTERVAL;
+  deltaYaw = (deltaYaw * gyroDpsPerDigit - gyroZeroYaw) * REFRESH_INTERVAL;
 
 #ifdef DEBUG_UPDATE
   Serial.print("Gyro: ");
