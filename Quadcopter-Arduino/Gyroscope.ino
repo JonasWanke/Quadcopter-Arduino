@@ -39,20 +39,15 @@ void initGyro(int scale)
 #ifdef DEBUG_INIT
   Serial.print("Initializing gyroscope");
 #endif
-
-  // Enable x, y, z and turn off power down
-#ifdef GYRO_HPF_IMU
+  // CTRL_REG_1: Enable x, y, z, turn off power down
   // Output Data Rate: 01 (200Hz)
   // Bandwidth: 11, Cut-Off: 70
   writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG1, 0b01111111);
-#else
-  writeRegister(GYRO_CTRL_REG1, GYRO_CTRL_REG1, 0b00001111);
-#endif
 #ifdef DEBUG_INIT
-  Serial.println("GYRO_CTRL_REG5");
+  Serial.println("GYRO_CTRL_REG1");
 #endif
 
-  // High pass filter
+  // GYRO_CTRL_REG2: High pass filter
 #ifdef GYRO_HPF_IMU
   writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG2, 0b00000000);
 #ifdef DEBUG_INIT
@@ -60,7 +55,7 @@ void initGyro(int scale)
 #endif
 #endif
 
-  // GYRO_CTRL_REG4: range
+  // GYRO_CTRL_REG4: Range
   if (scale == 250) {
     writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG4, 0b00000000);
     gyroDpsPerDigit = 0.00875;
@@ -75,11 +70,9 @@ void initGyro(int scale)
   }
 #ifdef DEBUG_INIT
   Serial.println("GYRO_CTRL_REG4");
-  Serial.println(gyroDpsPerDigit);
-  Serial.println(0.0175);
 #endif
 
-  // CTRL_REG5: enable High Pass Filter
+  // CTRL_REG5: Enable High Pass Filter
 #ifdef GYRO_HPF_IMU
   writeRegister(GYRO_SERIAL_ADDRESS, GYRO_CTRL_REG5, 0b00010000);
 #else
@@ -163,3 +156,4 @@ void updateGyro()
   Serial.print(";\t");
 #endif
 }
+
