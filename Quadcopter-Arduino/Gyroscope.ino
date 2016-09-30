@@ -21,6 +21,9 @@ float gyroZeroYaw;
 
 const int GYRO_CALIBRATION_READINGS = 500;
 
+const int GYRO_EEPROM_ID = 1;
+const int GYRO_EEPROM_OFFSET = 512 + GYRO_EEPROM_ID * 64;
+
 //High Pass Filter (on the IMU)
 #define GYRO_HPF_IMU
 
@@ -80,6 +83,11 @@ void initGyro(int scale)
 #endif
 #ifdef DEBUG_INIT
   Serial.println("GYRO_CTRL_REG5");
+#endif
+  EEPROM.get(GYRO_EEPROM_OFFSET, gyroZeroRoll);
+  EEPROM.get(GYRO_EEPROM_OFFSET + 1 * sizeof(float), gyroZeroPitch);
+  EEPROM.get(GYRO_EEPROM_OFFSET + 2 * sizeof(float), gyroZeroYaw);
+#ifdef DEBUG_INIT
   Serial.println("Finished initializing gyroscope");
 #endif
 }
@@ -103,6 +111,10 @@ void calibrateGyro()
   gyroZeroRoll = sumRoll / GYRO_CALIBRATION_READINGS * gyroDpsPerDigit;
   gyroZeroPitch = sumPitch / GYRO_CALIBRATION_READINGS * gyroDpsPerDigit;
   gyroZeroYaw = sumYaw / GYRO_CALIBRATION_READINGS * gyroDpsPerDigit;
+  EEPROM.put(GYRO_EEPROM_OFFSET, gyroZeroRoll);
+  EEPROM.put(GYRO_EEPROM_OFFSET + 1 * sizeof(float), gyroZeroPitch);
+  EEPROM.put(GYRO_EEPROM_OFFSET + 2 * sizeof(float), gyroZeroYaw);
+  
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
   delay(100);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
