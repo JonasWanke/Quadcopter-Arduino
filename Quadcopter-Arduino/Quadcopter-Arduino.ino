@@ -56,6 +56,8 @@ void setup() {
   pinMode(PIN_LED_CALIBRATION_FINISHED, OUTPUT);
   digitalWrite(PIN_LED_CALIBRATION, HIGH);
 
+  //calibrateAcc();
+  //calibrateGyro();
 
   digitalWrite(PIN_LED_CALIBRATION, LOW);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);

@@ -33,6 +33,6 @@ void updateKalman()
   Serial.print(";\t");
   Serial.print(yaw * RAD_TO_DEG);
   Serial.print(";\t");
-  //*/
+#endif
 }
 
