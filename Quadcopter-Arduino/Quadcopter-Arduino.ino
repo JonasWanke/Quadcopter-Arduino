@@ -52,7 +52,6 @@ void setup() {
   pinMode(PIN_LED_CALIBRATION_FINISHED, OUTPUT);
   digitalWrite(PIN_LED_CALIBRATION, HIGH);
 
-  calibrateGyro();
 
   digitalWrite(PIN_LED_CALIBRATION, LOW);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
@@ -77,6 +76,7 @@ void loop() {
   if (digitalRead(PIN_BUTTON_CALIBRATION))
     calibrateAcc();
 
+  updateAcc();
   updateGyro();
 
 #ifdef DEBUG_UPDATE
@@ -85,3 +85,9 @@ void loop() {
 
   delay(REFRESH_INTERVAL * 1000);
 }
+
+inline float mapf(float value, float fromLow, float fromHigh, float toLow, float toHigh)
+{
+  return (value - fromLow) / (fromHigh - fromLow) * (toHigh - toLow) + toLow;
+}
+

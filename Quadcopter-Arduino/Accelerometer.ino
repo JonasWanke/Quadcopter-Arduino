@@ -6,20 +6,31 @@ const byte ACC_DATA_FORMAT = 0x31;
 const byte ACC_FIFO_CTL = 0x38;
 const byte ACC_DATA = 0x32;
 
+// Unit: g
 float accX;
+// Unit: g
 float accY;
+// Unit: g
 float accZ;
+// Unit: rad
 float accRoll;
+// Unit: rad
 float accPitch;
 
 float accGPerLSB;
 byte accData[6];
 
+// Unit: g
 float accMinX;
+// Unit: g
 float accMaxX;
+// Unit: g
 float accMinY;
+// Unit: g
 float accMaxY;
+// Unit: g
 float accMinZ;
+// Unit: g
 float accMaxZ;
 
 const int ACC_CALIBRATION_READINGS = 500;
@@ -187,15 +198,15 @@ void updateAcc()
 
 #ifdef DEBUG_UPDATE
   Serial.print("Acc: ");
-  Serial.print(accX, 2);
+  Serial.print(accX);
   Serial.print(";\t");
-  Serial.print(accY, 2);
+  Serial.print(accY);
   Serial.print(";\t");
-  Serial.print(accZ, 2);
+  Serial.print(accZ);
   Serial.print(";\t");
-  Serial.print(accRoll * RAD_TO_DEG, 2);
+  Serial.print(accRoll * RAD_TO_DEG);
   Serial.print(";\t");
-  Serial.print(accPitch * RAD_TO_DEG, 2);
+  Serial.print(accPitch * RAD_TO_DEG);
   Serial.print(";\t");
 #endif
 }
