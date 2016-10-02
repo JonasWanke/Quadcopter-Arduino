@@ -3,27 +3,33 @@ const byte ACC_DEVID = 0x00;
 const byte ACC_BW_RATE = 0x2C;
 const byte ACC_POWER_CTL = 0x2D;
 const byte ACC_DATA_FORMAT = 0x31;
-const byte ACC_FIFO_CTL = 38;
-float acc[3];
-float accGPerLSB;
+const byte ACC_FIFO_CTL = 0x38;
+const byte ACC_DATA = 0x32;
 
+float accX;
+float accY;
+float accZ;
 float accRoll;
 float accPitch;
 
+float accGPerLSB;
+byte accData[6];
+
 float accMinX;
-float accMinY;
-float accMinZ;
 float accMaxX;
+float accMinY;
 float accMaxY;
+float accMinZ;
 float accMaxZ;
 
 const int ACC_CALIBRATION_READINGS = 500;
 
-const int ACC_EEPROM_OFFSET = 0;
+const int ACC_EEPROM_ID = 0;
+const int ACC_EEPROM_OFFSET = 512 + ACC_EEPROM_ID * 64;
 
 #define ACC_LPF
 #ifdef ACC_LPF
-const byte ACC_BUFFER_LENGTH = 5;
+const byte ACC_BUFFER_LENGTH = 8;
 int accBuffer[ACC_BUFFER_LENGTH][3];
 int accBufferSum[3];
 byte accBufferPos = 0;
@@ -36,22 +42,16 @@ void initAcc(int scale)
   Serial.println("Initializing Accelerometer");
 #endif
 
-  // POWER_CTL
-  writeRegister(ACC_SERIAL_ADDRESS, ACC_POWER_CTL, 0b00101001);
-#ifdef DEBUG_INIT
-  Serial.println("ACC_POWER_CTL");
-#endif
-
-  // FIFO_CTL
-  writeRegister(ACC_SERIAL_ADDRESS, ACC_FIFO_CTL, 0b10000000);
-#ifdef DEBUG_INIT
-  Serial.println("ACC_FIFO_CTL");
-#endif
-
   // BW_RATE
   writeRegister(ACC_SERIAL_ADDRESS, ACC_BW_RATE, 0b00001011);
 #ifdef DEBUG_INIT
   Serial.println("ACC_BW_RATE");
+#endif
+
+  // POWER_CTL
+  writeRegister(ACC_SERIAL_ADDRESS, ACC_POWER_CTL, 0b00101001);
+#ifdef DEBUG_INIT
+  Serial.println("ACC_POWER_CTL");
 #endif
 
   // DATA_FORMAT (6+7: Range)
@@ -77,15 +77,23 @@ void initAcc(int scale)
   }
 #ifdef DEBUG_INIT
   Serial.println("ACC_DATA_FORMAT");
-  #endif
+#endif
+
+  // FIFO_CTL
+  writeRegister(ACC_SERIAL_ADDRESS, ACC_FIFO_CTL, 0b10000000);
+#ifdef DEBUG_INIT
+  Serial.println("ACC_FIFO_CTL");
+#endif
+
   EEPROM.get(ACC_EEPROM_OFFSET, accMinX);
   EEPROM.get(ACC_EEPROM_OFFSET + 1 * sizeof(float), accMaxX);
   EEPROM.get(ACC_EEPROM_OFFSET + 2 * sizeof(float), accMinY);
   EEPROM.get(ACC_EEPROM_OFFSET + 3 * sizeof(float), accMaxY);
   EEPROM.get(ACC_EEPROM_OFFSET + 4 * sizeof(float), accMinZ);
   EEPROM.get(ACC_EEPROM_OFFSET + 5 * sizeof(float), accMaxZ);
-  #ifdef DEBUG_INIT
-  Serial.println("Finished initializing gyroscope");
+
+#ifdef DEBUG_INIT
+  Serial.println("Finished initializing accelerometer");
 #endif
 }
 
@@ -94,115 +102,13 @@ void calibrateAcc()
 #ifdef DEBUG_CALIBRATE
   Serial.println("Calibrating accelerometer");
 #endif
-  byte* data;
-  long sumX;
-  long sumY;
-  long sumZ;
 
-  delay(1000);
-  // Hold horizontal
-#ifdef DEBUG_CALIBRATE
-  Serial.println("Hold horizontal");
-#endif
-  while (!digitalRead(PIN_BUTTON_CALIBRATION));
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
-  sumY = 0;
-  sumZ = 0;
-  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
-  {
-    data = readRegister(ACC_SERIAL_ADDRESS, 0x36, 2);
-    sumZ += (data[1] << 8) | data[0];
-    Serial.println(i);
-    delay(10);
-  }
-  accMaxZ = sumZ / ACC_CALIBRATION_READINGS * accGPerLSB;
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-  // Hold upside down
-#ifdef DEBUG_CALIBRATE
-  Serial.println("Hold upside down");
-#endif
-  while (!digitalRead(PIN_BUTTON_CALIBRATION));
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
-  sumZ = 0;
-  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
-  {
-    data = readRegister(ACC_SERIAL_ADDRESS, 0x36, 2);
-    sumZ += (data[1] << 8) | data[0];
-    Serial.println(i);
-    delay(10);
-  }
-  accMinZ = sumZ / ACC_CALIBRATION_READINGS * accGPerLSB;
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-  // Hold right side down
-#ifdef DEBUG_CALIBRATE
-  Serial.println("Hold right side down");
-#endif
-  while (!digitalRead(PIN_BUTTON_CALIBRATION));
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
-  Serial.println("Right down");
-  sumY = 0;
-  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
-  {
-    data = readRegister(ACC_SERIAL_ADDRESS, 0x34, 2);
-    sumY += (data[1] << 8) | data[0];
-    Serial.println(i);
-    delay(10);
-  }
-  accMaxY = sumY / ACC_CALIBRATION_READINGS * accGPerLSB;
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-  // Hold left side down
-#ifdef DEBUG_CALIBRATE
-  Serial.println("Hold left side down");
-#endif
-  while (!digitalRead(PIN_BUTTON_CALIBRATION));
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
-  sumY = 0;
-  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
-  {
-    data = readRegister(ACC_SERIAL_ADDRESS, 0x34, 2);
-    sumY += (data[1] << 8) | data[0];
-    Serial.println(i);
-    delay(10);
-  }
-  accMinY = sumY / ACC_CALIBRATION_READINGS * accGPerLSB;
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-  // Hold front side down
-#ifdef DEBUG_CALIBRATE
-  Serial.println("Hold front side down");
-#endif
-  while (!digitalRead(PIN_BUTTON_CALIBRATION));
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
-  sumX = 0;
-  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
-  {
-    data = readRegister(ACC_SERIAL_ADDRESS, 0x32, 2);
-    sumX += (data[1] << 8) | data[0];
-    Serial.println(i);
-    delay(10);
-  }
-  accMinX = sumX / ACC_CALIBRATION_READINGS * accGPerLSB;
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
-
-  // Hold back side down
-#ifdef DEBUG_CALIBRATE
-  Serial.println("Hold back side down");
-#endif
-  while (!digitalRead(PIN_BUTTON_CALIBRATION));
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
-  sumX = 0;
-  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
-  {
-    data = readRegister(ACC_SERIAL_ADDRESS, 0x32, 2);
-    sumX += (data[1] << 8) | data[0];
-    Serial.println(i);
-    delay(10);
-  }
-  accMaxX = sumX / ACC_CALIBRATION_READINGS * accGPerLSB;
-  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
+  calibrateValue(ACC_DATA + 4, &accMaxZ, "horizontal");
+  calibrateValue(ACC_DATA + 4, &accMinZ, "upside down");
+  calibrateValue(ACC_DATA + 2, &accMaxY, "right side down");
+  calibrateValue(ACC_DATA + 2, &accMinY, "left side down");
+  calibrateValue(ACC_DATA, &accMinX, "front side down");
+  calibrateValue(ACC_DATA, &accMaxX, "back side down");
 
   EEPROM.put(ACC_EEPROM_OFFSET, accMinX);
   EEPROM.put(ACC_EEPROM_OFFSET + 1 * sizeof(float), accMaxX);
@@ -212,8 +118,9 @@ void calibrateAcc()
   EEPROM.put(ACC_EEPROM_OFFSET + 5 * sizeof(float), accMaxZ);
   delay(100);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
+
 #ifdef DEBUG_CALIBRATE
-  Serial.print("Calibration finished, mins, avgs and maxs (g): ");
+  Serial.print("Calibration finished, mins and maxs (g):");
   Serial.print(accMinX, 2);
   Serial.print(";\t");
   Serial.print(accMaxX, 2);
@@ -229,44 +136,67 @@ void calibrateAcc()
 #endif
 }
 
-void readAcc()
+void calibrateValue(int offset, float* value, String message)
 {
-  byte* data = readRegister(ACC_SERIAL_ADDRESS, 0x32, 6);
+#ifdef DEBUG_CALIBRATE
+  Serial.println("Hold " + message);
+#endif
+  while (!digitalRead(PIN_BUTTON_CALIBRATION));
+  digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
+  long sum = 0;
+  for (int i = 0; i < ACC_CALIBRATION_READINGS; i++)
+  {
+    readRegistersFast(ACC_SERIAL_ADDRESS, offset, 2, accData);
+    sum += (accData[1] << 8) | accData[0];
+    delay(10);
+  }
+  *value = sum / ACC_CALIBRATION_READINGS * accGPerLSB;
+  digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
+}
 
-  int x = (data[1] << 8) | data[0];
-  int y = (data[3] << 8) | data[2];
-  int z = (data[5] << 8) | data[4];
+void updateAcc()
+{
+  readRegistersFast(ACC_SERIAL_ADDRESS, ACC_DATA, 6, accData);
+  accX = (accData[1] << 8) | accData[0];
+  accY = (accData[3] << 8) | accData[2];
+  accZ = (accData[5] << 8) | accData[4];
 
 #ifdef ACC_LPF
   accBufferSum[0] -= accBuffer[accBufferPos][0];
   accBufferSum[1] -= accBuffer[accBufferPos][1];
   accBufferSum[2] -= accBuffer[accBufferPos][2];
-  accBuffer[accBufferPos][0] = x;
-  accBuffer[accBufferPos][1] = y;
-  accBuffer[accBufferPos][2] = z;
-  accBufferSum[0] += x;
-  accBufferSum[1] += y;
-  accBufferSum[2] += z;
+  accBuffer[accBufferPos][0] = accX;
+  accBuffer[accBufferPos][1] = accY;
+  accBuffer[accBufferPos][2] = accZ;
+  accBufferSum[0] += accX;
+  accBufferSum[1] += accY;
+  accBufferSum[2] += accZ;
   accBufferPos++;
-  if (accBufferPos == ACC_BUFFER_LENGTH) accBufferPos = 0;
-
-  acc[0] = accBufferSum[0] / ACC_BUFFER_LENGTH;
-  acc[1] = accBufferSum[1] / ACC_BUFFER_LENGTH;
-  acc[2] = accBufferSum[2] / ACC_BUFFER_LENGTH;
+  accBufferPos %= ACC_BUFFER_LENGTH;
+  accX = accBufferSum[0] / ACC_BUFFER_LENGTH * accGPerLSB;
+  accY = accBufferSum[1] / ACC_BUFFER_LENGTH * accGPerLSB;
+  accZ = accBufferSum[2] / ACC_BUFFER_LENGTH * accGPerLSB;
 #endif
 
-  acc[0] = map(acc[0] * accGPerLSB, accMinX, accMaxX, -1, 1);
-  acc[1] = map(acc[1] * accGPerLSB, accMinY, accMaxY, -1, 1);
-  acc[2] = map(acc[2] * accGPerLSB, accMinZ, accMaxZ, -1, 1);
+  accX = mapf(accX, accMinX, accMaxX, -1, 1);
+  accY = mapf(accY, accMinY, accMaxY, -1, 1);
+  accZ = mapf(accZ, accMinZ, accMaxZ, -1, 1);
 
-  accRoll = atan2(acc[2], acc[1]);
-  accPitch = atan2(acc[2], acc[0]);
+  accRoll = atan2(sqrt(accX * accX + accZ * accZ), accY);
+  accPitch = atan2(sqrt(accY * accY + accZ * accZ), accX);
 
 #ifdef DEBUG_UPDATE
   Serial.print("Acc: ");
+  Serial.print(accX, 2);
+  Serial.print(";\t");
+  Serial.print(accY, 2);
+  Serial.print(";\t");
+  Serial.print(accZ, 2);
+  Serial.print(";\t");
   Serial.print(accRoll * RAD_TO_DEG, 2);
   Serial.print(";\t");
   Serial.print(accPitch * RAD_TO_DEG, 2);
   Serial.print(";\t");
 #endif
 }
+

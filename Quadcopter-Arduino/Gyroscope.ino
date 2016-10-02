@@ -42,6 +42,7 @@ void initGyro(int scale)
 #ifdef DEBUG_INIT
   Serial.print("Initializing gyroscope");
 #endif
+
   // CTRL_REG_1: Enable x, y, z, turn off power down
   // Output Data Rate: 01 (200Hz)
   // Bandwidth: 11, Cut-Off: 70
@@ -87,6 +88,7 @@ void initGyro(int scale)
   EEPROM.get(GYRO_EEPROM_OFFSET, gyroZeroRoll);
   EEPROM.get(GYRO_EEPROM_OFFSET + 1 * sizeof(float), gyroZeroPitch);
   EEPROM.get(GYRO_EEPROM_OFFSET + 2 * sizeof(float), gyroZeroYaw);
+
 #ifdef DEBUG_INIT
   Serial.println("Finished initializing gyroscope");
 #endif
@@ -97,12 +99,13 @@ void calibrateGyro()
 #ifdef DEBUG_CALIBRATE
   Serial.println("Calibrating gyro");
 #endif
+
   long sumRoll = 0;
   long sumPitch = 0;
   long sumYaw = 0;
   for (int i = 0; i < GYRO_CALIBRATION_READINGS; i++)
   {
-    readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6, gyroData);
+    readRegisters(GYRO_SERIAL_ADDRESS, 0x28, 6, gyroData);
     sumRoll += ((gyroData[1] << 8) | gyroData[0]);
     sumPitch += ((gyroData[3] << 8) | gyroData[2]);
     sumYaw += ((gyroData[5] << 8) | gyroData[4]);
@@ -114,10 +117,11 @@ void calibrateGyro()
   EEPROM.put(GYRO_EEPROM_OFFSET, gyroZeroRoll);
   EEPROM.put(GYRO_EEPROM_OFFSET + 1 * sizeof(float), gyroZeroPitch);
   EEPROM.put(GYRO_EEPROM_OFFSET + 2 * sizeof(float), gyroZeroYaw);
-  
+
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, HIGH);
   delay(100);
   digitalWrite(PIN_LED_CALIBRATION_FINISHED, LOW);
+
 #ifdef DEBUG_CALIBRATE
   Serial.print("Calibration finished, averages (°/s): ");
   Serial.print(gyroZeroRoll, 2);
@@ -131,7 +135,7 @@ void calibrateGyro()
 
 void updateGyro()
 {
-  readRegister(GYRO_SERIAL_ADDRESS, 0x28, 6, gyroData);
+  readRegisters(GYRO_SERIAL_ADDRESS, 0x28, 6, gyroData);
 
   deltaRoll = (gyroData[1] << 8) | gyroData[0];
   deltaPitch = (gyroData[3] << 8) | gyroData[2];
