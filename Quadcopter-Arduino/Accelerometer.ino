@@ -190,11 +190,11 @@ void updateAcc()
 #endif
 
   accX = mapf(accX, accMinX, accMaxX, -1, 1);
-  accY = mapf(accY, accMinY, accMaxY, -1, 1);
-  accZ = mapf(accZ, accMinZ, accMaxZ, -1, 1);
+  accY = -mapf(accY, accMinY, accMaxY, -1, 1);
+  accZ = -mapf(accZ, accMinZ, accMaxZ, -1, 1);
 
-  accRoll = atan2(sqrt(accX * accX + accZ * accZ), accY);
-  accPitch = atan2(sqrt(accY * accY + accZ * accZ), accX);
+  accRoll = atan2(sqrt(accX * accX + accZ * accZ), accY) - PI_OVER_2;
+  accPitch = -(atan2(sqrt(accY * accY + accZ * accZ), accX) - PI_OVER_2);
 
 #ifdef DEBUG_UPDATE
   Serial.print("Acc: ");

@@ -1,10 +1,13 @@
 #include <EEPROM.h>
 #include <Wire.h>
+#include "Kalman.h"
 
 // Debug options
 #define DEBUG_INIT
 #define DEBUG_CALIBRATE
 #define DEBUG_UPDATE
+
+const double PI_OVER_2 = PI / 2;
 
 // Unit: µs
 unsigned long lastTime = 0;
@@ -35,6 +38,7 @@ void setup() {
 
   initGyro(250);
   initAcc(4);
+  initKalman();
 
 #ifdef DEBUG_INIT
   Serial.println("Initialization finished");
@@ -78,6 +82,7 @@ void loop() {
 
   updateAcc();
   updateGyro();
+  updateKalman();
 
 #ifdef DEBUG_UPDATE
   Serial.println();

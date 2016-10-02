@@ -159,8 +159,8 @@ void updateGyro()
 #endif
 
   deltaRoll = (deltaRoll * gyroRadPerSecondPerDigit - gyroZeroRoll) * REFRESH_INTERVAL;
-  deltaPitch = (deltaPitch * gyroRadPerSecondPerDigit - gyroZeroPitch) * REFRESH_INTERVAL;
-  deltaYaw = (deltaYaw * gyroRadPerSecondPerDigit - gyroZeroYaw) * REFRESH_INTERVAL;
+  deltaPitch = -(deltaPitch * gyroRadPerSecondPerDigit - gyroZeroPitch) * REFRESH_INTERVAL;
+  deltaYaw = -(deltaYaw * gyroRadPerSecondPerDigit - gyroZeroYaw) * REFRESH_INTERVAL;
 
 #ifdef DEBUG_UPDATE
   Serial.print("Gyro: ");
